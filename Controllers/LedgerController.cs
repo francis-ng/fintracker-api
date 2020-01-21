@@ -4,6 +4,7 @@ using FinancialTrackerApi.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 
 namespace FinancialTrackerApi.Controllers
@@ -63,6 +64,7 @@ namespace FinancialTrackerApi.Controllers
             _logger.LogInformation("Adding data for user {User}", owner);
 
             ledger.Owner = owner;
+            ledger.UpdatedAt = DateTime.Now;
             _ledgerService.Add(ledger);
 
             return CreatedAtRoute("GetLedger", new 
@@ -83,6 +85,7 @@ namespace FinancialTrackerApi.Controllers
                 return NotFound();
             }
 
+            inLedger.UpdatedAt = DateTime.Now;
             _ledgerService.Update(id, inLedger);
 
             return NoContent();

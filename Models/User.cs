@@ -13,6 +13,6 @@ namespace FinancialTrackerApi.Models
 
         public string Password { get; set; }
 
-        public string Salt { get; set; }
+        public byte[] Salt { get; set; }
     }
 }

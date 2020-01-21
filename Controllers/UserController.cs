@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Text;
 
 namespace FinancialTrackerApi.Controllers
 {
@@ -39,12 +41,18 @@ namespace FinancialTrackerApi.Controllers
                 return response;
             }
 
-            var hashedPassword = Argon2.Hash(login.Password + user.Salt);
-            if (Argon2.Verify(hashedPassword, login.Password + user.Salt))
+            var argon2Config = new Argon2Config
+            {
+                Threads = Environment.ProcessorCount,
+                Password = Encoding.UTF8.GetBytes(login.Password),
+                Salt = user.Salt,
+                HashLength = 128
+            };
+            if (Argon2.Verify(user.Password, argon2Config))
             {
                 _logger.LogInformation("User {User} logged in", login.UserName);
                 var token = Auth.GenerateJWToken(_config, user);
-                response = Ok(new { token });
+                return Ok(new { token });
             }
 
             _logger.LogWarning("User {User} provided wrong password", login.UserName);
@@ -65,7 +73,15 @@ namespace FinancialTrackerApi.Controllers
             }
 
             var salt = Auth.GenerateSalt();
-            var hashedPassword = Argon2.Hash(register.Password + salt);
+
+            var argon2Config = new Argon2Config
+            {
+                Threads = Environment.ProcessorCount,
+                Password = Encoding.UTF8.GetBytes(register.Password),
+                Salt = salt,
+                HashLength = 128
+            };
+            var hashedPassword = Argon2.Hash(argon2Config);
             user = new User
             {
                 UserName = register.UserName,
@@ -75,7 +91,7 @@ namespace FinancialTrackerApi.Controllers
 
             _ = _userService.Add(user);
 
-            return NoContent();
+            return Ok();
         }
     }
 }

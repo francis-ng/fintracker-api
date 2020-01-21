@@ -4,7 +4,6 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -32,11 +31,11 @@ namespace FinancialTrackerApi.Utils
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public static string GenerateSalt()
+        public static byte[] GenerateSalt()
         {
             byte[] salt;
-            new RNGCryptoServiceProvider().GetNonZeroBytes(salt = new byte[16]);
-            return Encoding.UTF8.GetString(salt);
+            new RNGCryptoServiceProvider().GetNonZeroBytes(salt = new byte[128]);
+            return salt;
         }
 
         public static string GetUser(IEnumerable<Claim> claims)

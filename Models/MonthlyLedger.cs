@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Linq;
 
 namespace FinancialTrackerApi.Models
@@ -17,6 +18,8 @@ namespace FinancialTrackerApi.Models
         public int Month { get; set; }
 
         public int Year { get; set; }
+
+        public DateTime UpdatedAt { get; set; }
 
         public Item[] Debits { get; set; }
 
