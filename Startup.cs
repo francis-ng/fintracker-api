@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Linq;
 using System.Text;
 
 namespace FinancialTrackerApi
@@ -63,6 +64,13 @@ namespace FinancialTrackerApi
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseCors(builder =>
+            {
+                builder.WithOrigins(Configuration.GetSection("AllowedHosts").GetChildren().Select(x => x.Value).ToArray())
+                .WithHeaders(new[] { "Authorization", "Content-Type" })
+                .WithMethods(new[] { "GET", "POST", "PUT", "DELETE", "OPTIONS" });
+            });
 
             app.UseAuthorization();
 

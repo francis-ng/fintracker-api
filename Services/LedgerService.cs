@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace FinancialTrackerApi.Services
 {
@@ -19,24 +20,24 @@ namespace FinancialTrackerApi.Services
             _logger = logger;
         }
 
-        public MonthlyLedger Find(string id) =>
-            _ledgers.Find(ledger => ledger.Id == id).FirstOrDefault();
+        public async Task<MonthlyLedger> Find(string id) =>
+            await _ledgers.FindAsync(ledger => ledger.Id == id).GetAwaiter().GetResult().FirstOrDefaultAsync();
 
-        public List<MonthlyLedger> Get(string owner) =>
-            _ledgers.Find(ledger => ledger.Owner == owner).ToList();
+        public async Task<List<MonthlyLedger>> Get(string owner) =>
+            await _ledgers.FindAsync(ledger => ledger.Owner == owner).GetAwaiter().GetResult().ToListAsync();
 
-        public MonthlyLedger Get(string owner, int year, int month) =>
-            _ledgers.Find(ledger => ledger.Owner == owner && ledger.Year == year && ledger.Month == month).FirstOrDefault();
+        public async Task<MonthlyLedger> Get(string owner, int year, int month, string type) =>
+            await _ledgers.FindAsync(ledger => ledger.Owner == owner && ledger.Year == year && ledger.Month == month && ledger.Type == type).GetAwaiter().GetResult().FirstOrDefaultAsync();
 
-        public MonthlyLedger Add(MonthlyLedger ledger) {
-            _ledgers.InsertOne(ledger);
+        public async Task<MonthlyLedger> Add(MonthlyLedger ledger) {
+            await _ledgers.InsertOneAsync(ledger);
             return ledger;
         }
 
-        public void Update(string id, MonthlyLedger ledger) =>
-            _ledgers.ReplaceOne(ledger => ledger.Id == id, ledger);
+        public async Task Update(string id, MonthlyLedger ledger) =>
+            await _ledgers.ReplaceOneAsync(ledger => ledger.Id == id, ledger);
 
-        public void Delete(string id) =>
-            _ledgers.DeleteOne(ledger => ledger.Id == id);
+        public async Task Delete(string id) =>
+            await _ledgers.DeleteOneAsync(ledger => ledger.Id == id);
     }
 }

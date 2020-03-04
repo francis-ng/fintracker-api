@@ -1,5 +1,4 @@
-﻿using FinancialTrackerApi.Models;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -12,23 +11,71 @@ namespace FinancialTrackerApi.Utils
 {
     class Auth
     {
-        public static string GenerateJWToken(IConfiguration config, User user)
+        public static TokenResponse GenerateJWToken(IConfiguration config, string userName)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserName)
+                new Claim(JwtRegisteredClaimNames.Sub, userName)
             };
+
+            var expiry = DateTime.Now.AddDays(1);
 
             var token = new JwtSecurityToken(config["Jwt:Issuer"],
                 config["Jwt:Issuer"],
                 claims,
-                expires: DateTime.Now.AddDays(7),
+                expires: expiry,
                 signingCredentials: credentials);
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return new TokenResponse {
+                Token = new JwtSecurityTokenHandler().WriteToken(token),
+                Expiry = expiry
+            };
+        }
+
+        public static TokenResponse GenerateRefreshToken(IConfiguration config, string userName)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:RefreshKey"]));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, userName)
+            };
+
+            var expiry = DateTime.Now.AddYears(1);
+
+            var token = new JwtSecurityToken(config["Jwt:Issuer"],
+                config["Jwt:Issuer"],
+                claims,
+                expires: expiry,
+                signingCredentials: credentials);
+
+            return new TokenResponse {
+                Token = new JwtSecurityTokenHandler().WriteToken(token),
+                Expiry = expiry
+            };
+        }
+
+        public static string GetUser(string tokenString)
+        {
+            var token = new JwtSecurityTokenHandler().ReadJwtToken(tokenString);
+            if (token.ValidTo < DateTime.Now)
+            {
+                return null;
+            }
+
+            foreach (var claim in token.Claims)
+            {
+                if (claim.Type == JwtRegisteredClaimNames.Sub)
+                {
+                    return claim.Value;
+                }
+            }
+
+            return null;
         }
 
         public static byte[] GenerateSalt()
@@ -56,5 +103,11 @@ namespace FinancialTrackerApi.Utils
 
             return result;
         }
+    }
+
+    public class TokenResponse
+    {
+        public string Token { get; set; }
+        public DateTime Expiry { get; set; }
     }
 }

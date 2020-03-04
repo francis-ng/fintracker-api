@@ -23,10 +23,10 @@ namespace FinancialTrackerApi.Models
 
         public Item[] Debits { get; set; }
 
-        public decimal DebitTotal => Debits.Sum(debit => debit.Amount);
+        public decimal DebitTotal => Debits == null ? 0 : Debits.Sum(debit => debit.Amount);
 
         public Item[] Credits { get; set; }
 
-        public decimal CreditTotal => Credits.Sum(credit => credit.Amount);
+        public decimal CreditTotal => Credits == null ? 0 : Credits.Sum(credit => credit.Amount);
     }
 }

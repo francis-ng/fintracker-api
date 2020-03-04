@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System;
 
 namespace FinancialTrackerApi.Models
 {
@@ -14,5 +15,11 @@ namespace FinancialTrackerApi.Models
         public string Password { get; set; }
 
         public byte[] Salt { get; set; }
+
+        public string RefreshToken { get; set; }
+
+        public string AccessToken { get; set; }
+
+        public DateTime AccessExpiry { get; set; }
     }
 }

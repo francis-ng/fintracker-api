@@ -51,8 +51,20 @@ namespace FinancialTrackerApi.Controllers
             if (Argon2.Verify(user.Password, argon2Config))
             {
                 _logger.LogInformation("User {User} logged in", login.UserName);
-                var token = Auth.GenerateJWToken(_config, user);
-                return Ok(new { token });
+                var accessToken = Auth.GenerateJWToken(_config, user.UserName);
+                var refreshToken = Auth.GenerateRefreshToken(_config, user.UserName);
+
+                user.AccessToken = accessToken.Token;
+                user.RefreshToken = refreshToken.Token;
+                user.AccessExpiry = accessToken.Expiry;
+
+                _userService.Update(user.Id, user);
+
+                return Ok(new
+                {
+                    accessToken = accessToken.Token,
+                    refreshToken = refreshToken.Token
+                });
             }
 
             _logger.LogWarning("User {User} provided wrong password", login.UserName);
@@ -82,16 +94,58 @@ namespace FinancialTrackerApi.Controllers
                 HashLength = 128
             };
             var hashedPassword = Argon2.Hash(argon2Config);
+
+            var accessToken = Auth.GenerateJWToken(_config, register.UserName);
+            var refreshToken = Auth.GenerateRefreshToken(_config, register.UserName);
+
             user = new User
             {
                 UserName = register.UserName,
                 Password = hashedPassword,
-                Salt = salt
+                Salt = salt,
+                AccessToken = accessToken.Token,
+                RefreshToken = refreshToken.Token,
+                AccessExpiry = accessToken.Expiry
             };
 
             _ = _userService.Add(user);
 
-            return Ok();
+            return Ok(new 
+            { 
+                accessToken = accessToken.Token,
+                refreshToken = refreshToken.Token
+            });
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        public IActionResult Renew([FromBody]string token)
+        {
+            var userName = Auth.GetUser(token);
+            if (userName == null)
+            {
+                return Unauthorized();
+            }
+
+            var user = _userService.Get(userName);
+
+            if (user == null ||
+                user.RefreshToken != token ||
+                user.AccessExpiry.ToLocalTime() > DateTime.Now)
+            {
+                return Unauthorized();
+            }
+
+            var accessToken = Auth.GenerateJWToken(_config, userName);
+
+            user.AccessToken = accessToken.Token;
+            user.AccessExpiry = accessToken.Expiry;
+            _userService.Update(user.Id, user);
+
+            return Ok(new
+            {
+                accessToken = accessToken.Token
+            });
         }
     }
 }

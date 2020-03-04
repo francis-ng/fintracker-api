@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FinancialTrackerApi.Controllers
 {
@@ -24,31 +26,48 @@ namespace FinancialTrackerApi.Controllers
 
         [HttpGet]
         [Authorize]
-        public ActionResult<List<MonthlyLedger>> List()
+        public async Task<ActionResult<List<ListItem>>> ListAsync()
         {
             var owner = Auth.GetUser(User.Claims);
             _logger.LogInformation("Listing data for user {User}", owner);
 
-            var ledgers = _ledgerService.Get(owner);
+            var ledgers = await _ledgerService.Get(owner);
 
             if (ledgers == null || ledgers.Count == 0) {
                 _logger.LogWarning("Data for user {User} not found", owner);
                 return NotFound();
             }
 
-            return ledgers;
+            return ledgers.Select(x => {
+                return new ListItem()
+                {
+                    Year = x.Year,
+                    Month = x.Month,
+                    Type = x.Type
+                };
+            }).ToList();
         }
 
         [HttpGet(Name = "GetLedger")]
         [Authorize]
-        public ActionResult<MonthlyLedger> Get([FromQuery]int year, [FromQuery]int month)
+        public async Task<ActionResult<MonthlyLedger>> GetAsync([FromQuery]int year, [FromQuery]int month)
         {
             var owner = Auth.GetUser(User.Claims);
+            MonthlyLedger ledger = null;
+            var type = "regular";
+            
+            if (year == 0 && month == 0)
+            {
+                type = "fixed";
+                
+            }
+
             _logger.LogInformation("Getting data for user {User}, {Year}/{Month}", owner, year, month);
 
-            var ledger = _ledgerService.Get(owner, year, month);
+            ledger = await _ledgerService.Get(owner, year, month, type);
 
-            if (ledger == null) {
+            if (ledger == null)
+            {
                 _logger.LogWarning("Data for user {User}, {Year}/{Month} not found", owner, year, month);
                 return NotFound();
             }
@@ -58,14 +77,14 @@ namespace FinancialTrackerApi.Controllers
 
         [HttpPost]
         [Authorize]
-        public ActionResult<MonthlyLedger> Add(MonthlyLedger ledger)
+        public async Task<ActionResult<MonthlyLedger>> AddAsync(MonthlyLedger ledger)
         {
             var owner = Auth.GetUser(User.Claims);
             _logger.LogInformation("Adding data for user {User}", owner);
 
             ledger.Owner = owner;
             ledger.UpdatedAt = DateTime.Now;
-            _ledgerService.Add(ledger);
+            await _ledgerService.Add(ledger);
 
             return CreatedAtRoute("GetLedger", new 
                 {owner = ledger.Owner, year = ledger.Year.ToString(), month = ledger.Month.ToString() }
@@ -74,11 +93,11 @@ namespace FinancialTrackerApi.Controllers
 
         [HttpPut]
         [Authorize]
-        public IActionResult Update([FromQuery]string id, MonthlyLedger inLedger)
+        public async Task<IActionResult> UpdateAsync([FromQuery]string id, MonthlyLedger inLedger)
         {
             var ledger = _ledgerService.Find(id);
             var owner = Auth.GetUser(User.Claims);
-            _logger.LogInformation("Updating id {Id} for user {User}", owner);
+            _logger.LogInformation("Updating id {Id} for user {User}", id, owner);
 
             if (ledger == null) {
                 _logger.LogWarning("Id {Id} for user {User} not found", id, owner);
@@ -86,27 +105,34 @@ namespace FinancialTrackerApi.Controllers
             }
 
             inLedger.UpdatedAt = DateTime.Now;
-            _ledgerService.Update(id, inLedger);
+            await _ledgerService.Update(id, inLedger);
 
             return NoContent();
         }
 
         [HttpDelete]
         [Authorize]
-        public IActionResult Delete(string id)
+        public async Task<IActionResult> DeleteAsync(string id)
         {
             var ledger = _ledgerService.Find(id);
             var owner = Auth.GetUser(User.Claims);
-            _logger.LogInformation("Deleting id {Id} for user {User}", owner);
+            _logger.LogInformation("Deleting id {Id} for user {User}", id, owner);
 
             if (ledger == null) {
                 _logger.LogWarning("Id {Id} for user {User} not found", id, owner);
                 return NotFound();
             }
 
-            _ledgerService.Delete(id);
+            await _ledgerService.Delete(id);
 
             return NoContent();
         }
+    }
+
+    public class ListItem
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string Type { get; set; }
     }
 }
