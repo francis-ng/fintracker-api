@@ -1,0 +1,2 @@
+# Archived
+This project is archived together with fintracker-client. Originally made with a convoluted setup with the API being put into Cloud Run and the client hosted on Github as a fully client-only React app, I felt that it was time to remake this, with newer React experience in Next.js with the new server components and fully hosted in Vercel. No more questionable self-spun authentication either. [Next FinTracker](https://github.com/francis-ng/next-fintracker)
